@@ -472,7 +472,7 @@ class WorkshopChatbot {
     }
     
     // For deployed environments, construct backend URL from current location
-    // Expected format: <frontend-service>-<namespace>.<cluster-url>
+    // Expected format: <servicename>-<namespace>.<cluster-url>
     // Backend format: ai-assistant-backend-<namespace>.<cluster-url>
     
     const currentHost = window.location.hostname;
@@ -488,14 +488,14 @@ class WorkshopChatbot {
     const serviceAndNamespace = currentHost.substring(0, firstDotIndex);
     const clusterUrl = currentHost.substring(firstDotIndex + 1);
     
-    // Extract namespace: everything after the last dash in service-namespace part
-    const lastDashIndex = serviceAndNamespace.lastIndexOf('-');
-    if (lastDashIndex === -1) {
+    // Extract namespace: everything after the first dash in service-namespace part
+    const firstDashIndex = serviceAndNamespace.indexOf('-');
+    if (firstDashIndex === -1) {
       console.warn('Unable to parse namespace from hostname, falling back to default');
       return 'http://ai-assistant-backend:8080';
     }
     
-    const namespace = serviceAndNamespace.substring(lastDashIndex + 1);
+    const namespace = serviceAndNamespace.substring(firstDashIndex + 1);
     
     // Construct backend URL
     const backendUrl = `https://ai-assistant-backend-${namespace}.${clusterUrl}`;
