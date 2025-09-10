@@ -962,7 +962,7 @@ class ShowroomAIChatbot:
         return ""
 
     async def retrieve_relevant_content(self, query: str, page_context: str = None, max_chunks: int = None) -> tuple[str, List[Dict]]:
-        """Retrieve relevant content using RAG with optional page context prioritization"""
+        """Retrieve relevant content using RAG ordered by similarity score"""
         await self._ensure_initialized()
         
         # Use configured max chunks if not specified
@@ -975,7 +975,7 @@ class ShowroomAIChatbot:
             enhanced_query = f"{page_context} {query}"
             logger.info(f"RAG ENHANCED QUERY: Adding page context '{page_context}' to query '{query}'")
         
-        results = self.rag_engine.search(enhanced_query, top_k=max_chunks * 2)  # Get more results for filtering
+        results = self.rag_engine.search(enhanced_query, top_k=max_chunks)  # Get results based on similarity score only
 
         if not results:
             logger.info(f"RAG QUERY: '{enhanced_query}' - No relevant content found, using fallback")
@@ -985,23 +985,20 @@ class ShowroomAIChatbot:
             )
             return fallback_content, []
 
-        # Prioritize results based on page context
-        if page_context:
-            prioritized_results = self._prioritize_results_by_page_context(results, page_context, max_chunks)
-        else:
-            prioritized_results = results[:max_chunks]
+        # Use results ordered by similarity score (highest similarity first)
+        similarity_results = results
 
         # Log detailed RAG debugging information
         logger.info(f"=== RAG SEARCH START ===")
         logger.info(f"RAG QUERY: '{query}' with page context: '{page_context}'")
-        logger.info(f"RAG RESULTS: Found {len(prioritized_results)} relevant chunks:")
+        logger.info(f"RAG RESULTS: Found {len(similarity_results)} relevant chunks (ordered by similarity):")
         logger.info(f"=== RAG CONTENT SNIPPETS ===")
 
         # Combine relevant content and collect source information
         relevant_content = []
         sources = []
         
-        for i, result in enumerate(prioritized_results, 1):
+        for i, result in enumerate(similarity_results, 1):
             metadata = result['metadata']
             similarity = result['similarity']
             content = result['content']
@@ -1037,40 +1034,6 @@ class ShowroomAIChatbot:
 
         return context, sources
     
-    def _prioritize_results_by_page_context(self, results: List[Dict], page_context: str, max_chunks: int) -> List[Dict]:
-        """Prioritize RAG results based on page context"""
-        if not page_context:
-            return results[:max_chunks]
-        
-        page_context_lower = page_context.lower()
-        prioritized = []
-        remaining = []
-        
-        for result in results:
-            metadata = result['metadata']
-            title_lower = metadata.get('title', '').lower()
-            module_lower = metadata.get('module', '').lower()
-            
-            # Check if this chunk is related to the current page
-            is_related = (
-                page_context_lower in title_lower or
-                any(word in title_lower for word in page_context_lower.split() if len(word) > 3) or
-                page_context_lower in module_lower
-            )
-            
-            if is_related:
-                prioritized.append(result)
-                logger.debug(f"PRIORITIZED: {metadata['title']} (matches page context)")
-            else:
-                remaining.append(result)
-        
-        # Take prioritized results first, then fill with remaining
-        final_results = prioritized[:max_chunks]
-        if len(final_results) < max_chunks:
-            final_results.extend(remaining[:max_chunks - len(final_results)])
-        
-        logger.info(f"RAG PRIORITIZATION: {len(prioritized)} page-related, {len(remaining)} general, returning {len(final_results)} total")
-        return final_results
 
     async def get_mcp_tools(self, server_url: str = None) -> List[Dict]:
         """Get available MCP tools using FastMCP"""
