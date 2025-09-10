@@ -55,3 +55,5 @@ Click the link https://www.redhat.com/en/resources/virtualization-migration-asse
 
 image::2025_spring/conclusion/03_VMA_QR.png[link=self, window=blank, width=50%]
 
+
+include::ai-chatbot.adoc[]

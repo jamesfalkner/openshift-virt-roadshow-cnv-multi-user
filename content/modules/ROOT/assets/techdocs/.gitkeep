@@ -1,0 +1,3 @@
+# This file ensures the techdocs directory is tracked in git
+# Place your technical documentation PDF files in this directory
+# for the AI assistant to include them in its knowledge base

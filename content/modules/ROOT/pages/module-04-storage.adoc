@@ -160,3 +160,5 @@ image::2025_spring/module-04-storage/22_Fedora02_Running.png[link=self, window=b
 == Summary
 
 In this section of our lab we explored the storage options that are available when managing virtual machines. We also performed several VM management functions that are dependant on the storage provisioned for the virtual machine, including taking snapshots of VMs to peform basic restores, and cloning of VMs to be used in other projects or to help streamline future development.
+
+include::ai-chatbot.adoc[]

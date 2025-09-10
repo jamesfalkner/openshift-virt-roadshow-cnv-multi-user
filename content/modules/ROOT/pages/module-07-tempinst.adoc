@@ -415,3 +415,5 @@ image::2025_spring/module-07-tempinst/40_All_Stopped.png[link=self, window=blank
 == Summary
 
 In this section we learned how to clone and customize an existing template to create one that can be used for specific workloads like databases. We also learned how to configure one of the existing Windows templates that exists without a boot source, and automate it's installation process, so we can create future deployments easily by cloning the installation PVC that was created with that VM. We also introduced how to make use of instance types to further customize our virtual machines for specific workloads for a more cloud-like experience.
+
+include::ai-chatbot.adoc[]

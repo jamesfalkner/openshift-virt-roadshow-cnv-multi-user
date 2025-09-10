@@ -145,3 +145,5 @@ image::2025_spring/module-08-workingvms/22_WebApp_Success.png[link=self, window=
 == Summary
 
 In this module you were able to experience working with the virtual machines that you migrated into the OpenShift Virtualization environment from VMware vSphere by making them accessible outside of the cluster in a more modernized approach by using the native services and routes features in Red Hat OpenShift.
+
+include::ai-chatbot.adoc[]

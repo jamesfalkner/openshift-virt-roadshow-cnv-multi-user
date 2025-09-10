@@ -289,3 +289,5 @@ In this module, you explored working with physical networks and connecting Virtu
 User-defined networks provide cluster administrators and end users with highly customizable network configuration options and a much more flexible experience for managing both primary and secondary network types. 
 
 
+
+include::ai-chatbot.adoc[]

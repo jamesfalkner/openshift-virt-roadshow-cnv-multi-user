@@ -3,17 +3,21 @@ name: modules
 title: Experience OpenShift Virtualization
 version: master
 nav:
-- modules/ROOT/nav.adoc
-
+  - modules/ROOT/nav.adoc
 asciidoc:
   attributes:
     lab_name: Experience OpenShift Virtualization
     release-version: master
     page-pagination: true
+    assistant_name: Workshop AI Assistant
+    workshop_title: Experience OpenShift Virtualization Roadshow
+    welcome_message: "\U0001F44B Hi! I am your workshop assistant. I know all about the workshop content and can help you with questions, troubleshooting, and guidance."
+    sample_question_1: "\U0001F4AC How does OpenShift Virtualization compare to VMware?"
+    sample_question_2: "\U0001F527 What are the differences between warm and cold migrations using MTV?"
+    sample_question_3: "\U0001F4D6 Walk me through the first module"
   page-links:
-  - url: https://redhat.com
-    text: Red Hat
-
+    - url: https://redhat.com
+      text: Red Hat
   extensions:
-  - ./content/lib/tab-block.js
-  - ./content/lib/remote-include-processor.js
+    - ./content/lib/tab-block.js
+    - ./content/lib/remote-include-processor.js

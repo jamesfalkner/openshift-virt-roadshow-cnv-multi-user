@@ -126,3 +126,5 @@ This edition of the  OpenShift Virtualization Roadshow has been developed using 
 * Red Hat Migration Toolkit for Virtual Machines 2.8.5
 
 (Accurate as of August 7, 2025)
+
+include::ai-chatbot.adoc[]

@@ -162,3 +162,5 @@ image::2025_spring/module-05-bcdr/14_VM_Restored.png[link=self, window=blank, wi
 == Summary
 
 Protecting virtual machines is a critical aspect of a virtualization platform. OpenShift Virtualization provides multiple methods that enable native protection, for example using OADP, or allowing storage and backup partners to integrate their offerings. If you have questions about how to protect virtual machines, please don't hesitate to ask the proctors for the workshop or reach out to your vendor to determine their compatibility with OpenShift Virtualization.
+
+include::ai-chatbot.adoc[]
