@@ -397,6 +397,27 @@ summary  {
     color: black;
   }
 }
+
+/* Attribution styling */
+.attribution {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e1e5e9;
+}
+
+.attribution small {
+  color: #666;
+  font-size: 12px;
+}
+
+.attribution a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.attribution a:hover {
+  text-decoration: underline;
+}
 </style>
 
 <script>
@@ -600,6 +621,7 @@ class WorkshopChatbot {
         '<div class="chatbot-header">' +
           '<h3>{assistant_name}</h3>' +
           '<div class="chatbot-controls">' +
+            '<button id="chatbot-new-chat" class="chatbot-btn-icon" title="New Chat">🔄</button>' +
             '<button id="chatbot-settings" class="chatbot-btn-icon" title="Settings">⚙️</button>' +
             '<button id="chatbot-close" class="chatbot-btn-icon" title="Close">✕</button>' +
           '</div>' +
@@ -670,6 +692,11 @@ class WorkshopChatbot {
     // Settings toggle
     safeBindEvent('chatbot-settings', 'click', () => {
       this.toggleSettings();
+    });
+
+    // New chat button
+    safeBindEvent('chatbot-new-chat', 'click', () => {
+      this.startNewChat();
     });
 
     // MCP enabled toggle
@@ -774,6 +801,56 @@ class WorkshopChatbot {
     const panel = document.getElementById('chatbot-settings-panel');
     const isVisible = panel.style.display === 'block';
     panel.style.display = isVisible ? 'none' : 'block';
+  }
+
+  startNewChat() {
+    // Clear chat history
+    this.displayHistory = [];
+    this.chatHistory = [];
+    
+    // Clear localStorage
+    localStorage.removeItem(this.config.storageKey);
+    
+    // Clear messages container and show welcome message
+    const messagesContainer = document.getElementById('chatbot-messages');
+    if (messagesContainer) {
+      messagesContainer.innerHTML = 
+        '<div class="message bot-message">' +
+          '<div class="message-content">' +
+            '{welcome_message}' +
+            '<div class="sample-questions-container">' +
+              '<div class="sample-question" data-question="{sample_question_1}" style="cursor: pointer; color: #0066cc; margin: 4px 0; padding: 2px 0; font-size: 13px;" onmouseover="this.style.backgroundColor=&quot;#f0f8ff&quot;" onmouseout="this.style.backgroundColor=&quot;transparent&quot;">{sample_question_1}</div>' +
+              '<div class="sample-question" data-question="{sample_question_2}" style="cursor: pointer; color: #0066cc; margin: 4px 0; padding: 2px 0; font-size: 13px;" onmouseover="this.style.backgroundColor=&quot;#f0f8ff&quot;" onmouseout="this.style.backgroundColor=&quot;transparent&quot;">{sample_question_2}</div>' +
+              '<div class="sample-question" data-question="{sample_question_3}" style="cursor: pointer; color: #0066cc; margin: 4px 0; padding: 2px 0; font-size: 13px;" onmouseover="this.style.backgroundColor=&quot;#f0f8ff&quot;" onmouseout="this.style.backgroundColor=&quot;transparent&quot;">{sample_question_3}</div>' +
+            '</div>' +
+            '<em>How can I help? Enter a question or click one of the sample questions to get started!</em>' +
+          '</div>' +
+        '</div>';
+      
+      // Re-bind sample question click events
+      const sampleQuestions = messagesContainer.querySelectorAll('.sample-question');
+      sampleQuestions.forEach(question => {
+        question.addEventListener('click', (e) => {
+          const questionText = e.target.getAttribute('data-question');
+          const input = document.getElementById('chatbot-input');
+          if (input && questionText) {
+            input.value = questionText;
+            input.focus();
+          }
+        });
+      });
+    }
+    
+    // Clear status
+    this.setStatus('');
+    
+    // Close settings panel if open
+    const settingsPanel = document.getElementById('chatbot-settings-panel');
+    if (settingsPanel) {
+      settingsPanel.style.display = 'none';
+    }
+    
+    console.log('Started new chat session');
   }
 
   saveSettings() {

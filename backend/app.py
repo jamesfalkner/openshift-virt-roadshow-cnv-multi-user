@@ -1015,7 +1015,7 @@ class ShowroomAIChatbot:
         return chunks
 
     def _generate_source_attribution(self, sources: List[Dict]) -> str:
-        """Generate source attribution text with links for workshop content and PDF references"""
+        """Generate source attribution text with clickable links for workshop content and PDF references"""
         if not sources:
             return ""
             
@@ -1031,36 +1031,73 @@ class ShowroomAIChatbot:
         
         attribution_parts = []
         
-        # Workshop content sources
+        # Workshop content sources with clickable links
         if workshop_sources:
             workshop_links = []
+            seen_pages = set()
+            
             for source in workshop_sources:
                 title = source['title']
-                workshop_links.append(f'<strong>{title}</strong>')
+                file_path = source.get('file_path', '')
+                
+                # Convert file path to HTML URL
+                # e.g., "content/modules/ROOT/pages/module-01.adoc" -> "module-01.html"
+                html_url = self._convert_file_path_to_url(file_path)
+                
+                # Avoid duplicate links for the same page
+                page_key = (title, html_url)
+                if page_key not in seen_pages:
+                    seen_pages.add(page_key)
+                    
+                    if html_url:
+                        workshop_links.append(f'<a href="{html_url}" target="_blank"><strong>{title}</strong></a>')
+                    else:
+                        # Fallback if we can't generate URL
+                        workshop_links.append(f'<strong>{title}</strong>')
             
-            workshop_part = "<strong>Workshop:</strong> " + ", ".join(workshop_links)
-            attribution_parts.append(workshop_part)
+            if workshop_links:
+                workshop_part = "<strong>Workshop:</strong> " + ", ".join(workshop_links)
+                attribution_parts.append(workshop_part)
         
-        # PDF reference sources  
+        # PDF reference sources (just names, no links)
         if pdf_sources:
-            pdf_links = []
+            pdf_names = []
+            seen_pdfs = set()
+            
             for source in pdf_sources:
                 title = source['title']
-                pdf_links.append(title)
+                if title not in seen_pdfs:
+                    seen_pdfs.add(title)
+                    pdf_names.append(f'<em>{title}</em>')
             
-            # Remove duplicates while preserving order
-            unique_pdf_links = []
-            seen = set()
-            for link in pdf_links:
-                if link not in seen:
-                    unique_pdf_links.append(link)
-                    seen.add(link)
-            
-            pdf_part = "<strong>References:</strong> " + ", ".join(unique_pdf_links)
-            attribution_parts.append(pdf_part)
+            if pdf_names:
+                pdf_part = "<strong>References:</strong> " + ", ".join(pdf_names)
+                attribution_parts.append(pdf_part)
         
         if attribution_parts:
-            return "\n\n---\n\n<small>" + " | ".join(attribution_parts) + "</small>"
+            # Use a format that works better with the frontend's formatMessage processing
+            return "\n\n<hr><div class=\"attribution\"><small>" + " | ".join(attribution_parts) + "</small></div>"
+        
+        return ""
+    
+    def _convert_file_path_to_url(self, file_path: str) -> str:
+        """Convert a file path to HTML URL for workshop content"""
+        if not file_path:
+            return ""
+            
+        # Extract filename from path like "content/modules/ROOT/pages/module-01.adoc"
+        if '/pages/' in file_path and file_path.endswith('.adoc'):
+            # Get the filename without extension
+            filename = file_path.split('/')[-1].replace('.adoc', '')
+            
+            # Skip special files that don't generate HTML pages
+            skip_files = ['ai-chatbot', 'nav', 'header', 'footer', 'theme', 'layout']
+            if any(skip_file in filename for skip_file in skip_files):
+                return ""
+            
+            # Convert to HTML URL
+            return f"{filename}.html"
+        
         return ""
 
     async def retrieve_relevant_content(self, query: str, page_context: str = None, max_chunks: int = None) -> tuple[str, List[Dict]]:
