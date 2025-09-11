@@ -808,8 +808,8 @@ class WorkshopChatbot {
     this.displayHistory = [];
     this.chatHistory = [];
     
-    // Clear localStorage
-    localStorage.removeItem(this.config.storageKey);
+    // Clear localStorage chat state
+    localStorage.removeItem('chatbot-state');
     
     // Clear messages container and show welcome message
     const messagesContainer = document.getElementById('chatbot-messages');
@@ -1115,29 +1115,37 @@ class WorkshopChatbot {
               const jsonStr = line.slice(6).trim();
               console.log('Parsing JSON string:', jsonStr);
               
-              // Check if there are multiple JSON objects (look for }[whitespace]data: pattern)
-              if (jsonStr.includes('}\n\ndata: {')) {
-                console.log('Detected multiple messages in one line, splitting...');
-                // Split on the pattern and reconstruct proper messages
-                const parts = jsonStr.split('\n\ndata: ');
+              // Check for concatenated JSON objects by looking for the pattern }\n\ndata:
+              const concatPattern = '}\n\ndata: ';
+              const hasMultipleMessages = jsonStr.includes(concatPattern);
+              console.log('Checking for concatenated messages, pattern found:', hasMultipleMessages);
+              
+              if (hasMultipleMessages) {
+                console.log('Detected multiple messages, splitting...');
+                // Find the split point
+                const splitIndex = jsonStr.indexOf(concatPattern);
+                const firstJson = jsonStr.substring(0, splitIndex + 1); // Include the closing }
+                const secondJson = jsonStr.substring(splitIndex + concatPattern.length); // Skip past "\n\ndata: "
                 
-                for (let i = 0; i < parts.length; i++) {
-                  let msgJson = parts[i];
-                  
-                  // First part is already properly formatted
-                  // Subsequent parts need data: prefix added back
-                  if (i > 0) {
-                    msgJson = msgJson;  // Already has the JSON without 'data: ' prefix
-                  }
-                  
-                  try {
-                    console.log('Processing split message:', msgJson);
-                    const msgData = JSON.parse(msgJson);
-                    console.log('SSE data received (split):', msgData);
-                    state = this.processSSEData(msgData, messageDiv, messagesContainer, state);
-                  } catch (splitParseError) {
-                    console.log('Parse error for split message:', msgJson, splitParseError);
-                  }
+                console.log('First JSON:', firstJson);
+                console.log('Second JSON:', secondJson);
+                
+                // Process first message
+                try {
+                  const firstData = JSON.parse(firstJson);
+                  console.log('SSE data received (first):', firstData);
+                  state = this.processSSEData(firstData, messageDiv, messagesContainer, state);
+                } catch (firstParseError) {
+                  console.log('Parse error for first message:', firstJson, firstParseError);
+                }
+                
+                // Process second message  
+                try {
+                  const secondData = JSON.parse(secondJson);
+                  console.log('SSE data received (second):', secondData);
+                  state = this.processSSEData(secondData, messageDiv, messagesContainer, state);
+                } catch (secondParseError) {
+                  console.log('Parse error for second message:', secondJson, secondParseError);
                 }
               } else {
                 const data = JSON.parse(jsonStr);
