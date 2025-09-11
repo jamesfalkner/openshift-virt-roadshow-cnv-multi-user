@@ -1022,8 +1022,10 @@ class ShowroomAIChatbot:
         workshop_sources = []
         pdf_sources = []
         
-        # Separate workshop content from PDF references
-        for source in sources:
+        # Sort sources by relevance score (highest first) and separate by type
+        sources_sorted = sorted(sources, key=lambda x: x.get('similarity', 0), reverse=True)
+        
+        for source in sources_sorted:
             if source['content_type'] == 'pdf-documentation':
                 pdf_sources.append(source)
             else:
@@ -1057,7 +1059,7 @@ class ShowroomAIChatbot:
                         workshop_links.append(f'*{title}*')
             
             if workshop_links:
-                workshop_part = "WORKSHOP: " + ", ".join(workshop_links)
+                workshop_part = "WORKSHOP:\n" + "\n".join(workshop_links)
                 attribution_parts.append(workshop_part)
         
         # PDF reference sources (just names, no links)
@@ -1072,12 +1074,12 @@ class ShowroomAIChatbot:
                     pdf_names.append(f'_{title}_')
             
             if pdf_names:
-                pdf_part = "REFERENCES: " + ", ".join(pdf_names)
+                pdf_part = "REFERENCES:\n" + "\n".join(pdf_names)
                 attribution_parts.append(pdf_part)
         
         if attribution_parts:
             # Use AsciiDoc formatting that the frontend will process correctly
-            return "\n\n---\n\n" + " | ".join(attribution_parts)
+            return "\n\n---\n\n" + "\n\n".join(attribution_parts)
         
         return ""
     

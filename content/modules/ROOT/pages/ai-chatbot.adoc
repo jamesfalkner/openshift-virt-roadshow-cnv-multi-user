@@ -420,7 +420,7 @@ summary  {
 }
 
 /* Message attribution styling - for references that appear after messages */
-.message-content hr ~ p {
+.message-attribution {
   font-size: 10px !important;
   color: #888 !important;
   text-transform: uppercase;
@@ -428,21 +428,23 @@ summary  {
   line-height: 1.3;
 }
 
-.message-content hr ~ p strong {
-  font-weight: normal !important;
+.message-attribution * {
   font-size: 10px !important;
   text-transform: uppercase;
+  font-weight: normal !important;
 }
 
-.message-content hr ~ p a {
+.message-attribution strong {
+  font-weight: normal !important;
+}
+
+.message-attribution a {
   color: #0066cc;
   text-decoration: none;
   font-weight: normal !important;
-  font-size: 10px !important;
-  text-transform: uppercase;
 }
 
-.message-content hr ~ p a:hover {
+.message-attribution a:hover {
   text-decoration: underline;
 }
 </style>
@@ -1301,6 +1303,9 @@ class WorkshopChatbot {
     // AsciiDoc bullet lists
     formatted = formatted.replace(/^\*\s+(.+?)$/gm, '<li class="bullet-list">$1</li>');
     
+    // Convert horizontal rules
+    formatted = formatted.replace(/^---$/gm, '<hr>');
+    
     // AsciiDoc links (process BEFORE bold formatting to avoid conflicts)
     formatted = formatted.replace(/link:([^\[]+)\[([^\]]*)\]/g, '<a href="$1" target="_blank">$2</a>');
     
@@ -1315,9 +1320,32 @@ class WorkshopChatbot {
     formatted = formatted.replace(/\n\n/g, '</p><p>');
     formatted = formatted.replace(/\n/g, '<br>');
     
-    // Wrap in paragraph tags if not already formatted
-    if (!formatted.includes('<h') && !formatted.includes('<div') && !formatted.includes('<pre') && !formatted.includes('<li')) {
-      formatted = '<p>' + formatted + '</p>';
+    // Handle attribution content specially
+    if (formatted.includes('<hr>') && (content.includes('WORKSHOP:') || content.includes('REFERENCES:'))) {
+      // Split on HR and wrap attribution part with special class
+      const parts = formatted.split('<hr>');
+      if (parts.length === 2) {
+        const mainContent = parts[0].trim();
+        const attributionContent = parts[1].trim();
+        
+        // Wrap main content in paragraph if needed
+        const wrappedMain = (!mainContent.includes('<h') && !mainContent.includes('<div') && !mainContent.includes('<pre') && !mainContent.includes('<li')) 
+          ? '<p>' + mainContent + '</p>' 
+          : mainContent;
+        
+        // Wrap attribution in special div
+        formatted = wrappedMain + '<hr><div class="message-attribution">' + attributionContent + '</div>';
+      } else {
+        // Fallback to normal wrapping
+        if (!formatted.includes('<h') && !formatted.includes('<div') && !formatted.includes('<pre') && !formatted.includes('<li')) {
+          formatted = '<p>' + formatted + '</p>';
+        }
+      }
+    } else {
+      // Normal content wrapping
+      if (!formatted.includes('<h') && !formatted.includes('<div') && !formatted.includes('<pre') && !formatted.includes('<li')) {
+        formatted = '<p>' + formatted + '</p>';
+      }
     }
     
     // Debug logging for attribution content
