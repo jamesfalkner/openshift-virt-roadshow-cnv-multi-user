@@ -1059,7 +1059,7 @@ class ShowroomAIChatbot:
                         workshop_links.append(f'*{title}*')
             
             if workshop_links:
-                workshop_part = "WORKSHOP:\n" + "\n".join(workshop_links)
+                workshop_part = "RELEVANT WORKSHOP LINKS:\n" + "\n".join(workshop_links)
                 attribution_parts.append(workshop_part)
         
         # PDF reference sources (just names, no links)
@@ -1071,10 +1071,10 @@ class ShowroomAIChatbot:
                 title = source['title']
                 if title not in seen_pdfs:
                     seen_pdfs.add(title)
-                    pdf_names.append(f'_{title}_')
+                    pdf_names.append(title)
             
             if pdf_names:
-                pdf_part = "REFERENCES:\n" + "\n".join(pdf_names)
+                pdf_part = "TECHDOC REFERENCES:\n" + "\n".join(pdf_names)
                 attribution_parts.append(pdf_part)
         
         if attribution_parts:

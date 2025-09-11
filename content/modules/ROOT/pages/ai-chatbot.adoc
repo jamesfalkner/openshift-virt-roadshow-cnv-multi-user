@@ -856,15 +856,27 @@ class WorkshopChatbot {
           '</div>' +
         '</div>';
       
-      // Re-bind sample question click events
+      // Re-bind sample question click events with auto-send
       const sampleQuestions = messagesContainer.querySelectorAll('.sample-question');
       sampleQuestions.forEach(question => {
         question.addEventListener('click', (e) => {
           const questionText = e.target.getAttribute('data-question');
           const input = document.getElementById('chatbot-input');
+          const sendBtn = document.getElementById('chatbot-send');
+          
           if (input && questionText) {
             input.value = questionText;
             input.focus();
+            
+            // Enable send button
+            if (sendBtn) {
+              sendBtn.disabled = false;
+            }
+            
+            // Automatically send the question
+            setTimeout(() => {
+              this.sendMessage();
+            }, 100);
           }
         });
       });
