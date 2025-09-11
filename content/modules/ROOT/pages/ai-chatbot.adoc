@@ -420,7 +420,7 @@ summary  {
 }
 
 /* Message attribution styling - for references that appear after messages */
-.message-content hr + p {
+.message-content hr ~ p {
   font-size: 10px !important;
   color: #888 !important;
   text-transform: uppercase;
@@ -428,17 +428,21 @@ summary  {
   line-height: 1.3;
 }
 
-.message-content hr + p strong {
+.message-content hr ~ p strong {
   font-weight: normal !important;
+  font-size: 10px !important;
+  text-transform: uppercase;
 }
 
-.message-content hr + p a {
+.message-content hr ~ p a {
   color: #0066cc;
   text-decoration: none;
   font-weight: normal !important;
+  font-size: 10px !important;
+  text-transform: uppercase;
 }
 
-.message-content hr + p a:hover {
+.message-content hr ~ p a:hover {
   text-decoration: underline;
 }
 </style>

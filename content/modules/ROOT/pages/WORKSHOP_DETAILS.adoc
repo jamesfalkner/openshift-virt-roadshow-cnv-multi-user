@@ -1,6 +1,6 @@
 // NOTE this is a sample description of this workshop intended to be used to ingest into the showroom-assistant RAG system to provide attendees with workshop-specific guidance as part of the AI assistant.
 
-= Catalog Description: Explore Red Hat OpenShift Virtualization for VM Management, Migration, Storage, Backup/Recovery, and Networking. Modernize VM workflows!
+= Workshop Overview
 
 [.lead]
 Explore Red Hat OpenShift Virtualization for VM Management, Migration, Storage, Backup/Recovery, and Networking. Modernize VM workflows!
