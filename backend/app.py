@@ -1050,13 +1050,14 @@ class ShowroomAIChatbot:
                     seen_pages.add(page_key)
                     
                     if html_url:
-                        workshop_links.append(f'<a href="{html_url}" target="_blank"><strong>{title}</strong></a>')
+                        # Use AsciiDoc link syntax: link:url[text]
+                        workshop_links.append(f'link:{html_url}[*{title}*]')
                     else:
                         # Fallback if we can't generate URL
-                        workshop_links.append(f'<strong>{title}</strong>')
+                        workshop_links.append(f'*{title}*')
             
             if workshop_links:
-                workshop_part = "<strong>Workshop:</strong> " + ", ".join(workshop_links)
+                workshop_part = "*Workshop:* " + ", ".join(workshop_links)
                 attribution_parts.append(workshop_part)
         
         # PDF reference sources (just names, no links)
@@ -1068,15 +1069,15 @@ class ShowroomAIChatbot:
                 title = source['title']
                 if title not in seen_pdfs:
                     seen_pdfs.add(title)
-                    pdf_names.append(f'<em>{title}</em>')
+                    pdf_names.append(f'_{title}_')
             
             if pdf_names:
-                pdf_part = "<strong>References:</strong> " + ", ".join(pdf_names)
+                pdf_part = "*References:* " + ", ".join(pdf_names)
                 attribution_parts.append(pdf_part)
         
         if attribution_parts:
-            # Use a format that works better with the frontend's formatMessage processing
-            return "\n\n<hr><div class=\"attribution\"><small>" + " | ".join(attribution_parts) + "</small></div>"
+            # Use AsciiDoc formatting that the frontend will process correctly
+            return "\n\n---\n\n_" + " | ".join(attribution_parts) + "_"
         
         return ""
     
@@ -1228,19 +1229,29 @@ class ShowroomAIChatbot:
             if include_mcp:
                 logger.info("=== USING TOOLS PATH ===")
                 yield f"data: {json.dumps({'status': 'Generating response with tools...'})}\\n\\n"
+                logger.info("Starting tools streaming...")
                 async for chunk in self._stream_with_tools(messages, user_message):
                     yield chunk
+                logger.info("Tools streaming completed")
             else:
                 logger.info("=== USING REGULAR STREAMING PATH ===")
                 yield f"data: {json.dumps({'status': 'Generating response...'})}\\n\\n"
+                logger.info("Starting regular streaming...")
                 async for chunk in self._stream_llm_response(messages):
                     yield chunk
+                logger.info("Regular streaming completed")
 
             # Step 5: Add source attribution at the end
+            logger.info(f"=== SOURCE ATTRIBUTION DEBUG ===")
+            logger.info(f"Sources available: {len(sources)}")
             source_attribution = self._generate_source_attribution(sources)
+            logger.info(f"Attribution generated: {bool(source_attribution)}")
+            logger.info(f"Attribution content: {repr(source_attribution)}")
             if source_attribution:
                 logger.info("=== ADDING SOURCE ATTRIBUTION ===")
                 yield f"data: {json.dumps({'content': source_attribution})}\\n\\n"
+            else:
+                logger.warning("No source attribution was generated")
 
             logger.info("=== CHAT REQUEST COMPLETED ===")
 

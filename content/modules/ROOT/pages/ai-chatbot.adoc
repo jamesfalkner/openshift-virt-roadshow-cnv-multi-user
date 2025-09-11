@@ -1057,7 +1057,6 @@ class WorkshopChatbot {
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-    let hasStarted = false;
 
     try {
       // Use Server-Sent Events for streaming
@@ -1066,38 +1065,13 @@ class WorkshopChatbot {
         include_mcp: this.config.mcpEnabled ? 'true' : 'false'
       }));
 
-      let fullResponse = '';
-
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          
-          if (data.status === 'starting') {
-            // Remove typing indicator and start showing response
-            const contentDiv = messageDiv.querySelector('.message-content');
-            contentDiv.innerHTML = '';
-            hasStarted = true;
-          } else if (data.status === 'complete') {
-            eventSource.close();
-          } else if (data.content) {
-            // Append new content
-            fullResponse += data.content;
-            const contentDiv = messageDiv.querySelector('.message-content');
-            contentDiv.textContent = fullResponse; // Show raw text during streaming
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-          } else if (data.error) {
-            throw new Error(data.error);
-          }
-        } catch (parseError) {
-          console.error('Error parsing SSE data:', parseError);
-        }
-      };
+      let state = { fullResponse: '', hasStarted: false };
 
       eventSource.onerror = (error) => {
         console.error('SSE error:', error);
         eventSource.close();
         
-        if (!hasStarted) {
+        if (!state.hasStarted) {
           messageDiv.remove();
           throw new Error('Failed to connect to chat service');
         }
@@ -1135,41 +1109,62 @@ class WorkshopChatbot {
         const lines = chunk.split('\n');
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.trim() && line.startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.slice(6));
+              // Handle case where multiple JSON objects are in one line
+              const jsonStr = line.slice(6).trim();
+              console.log('Parsing JSON string:', jsonStr);
               
-              if (data.status === 'starting') {
-                const contentDiv = messageDiv.querySelector('.message-content');
-                contentDiv.innerHTML = '';
-                hasStarted = true;
-              } else if (data.content) {
-                fullResponse += data.content;
-                const contentDiv = messageDiv.querySelector('.message-content');
-                contentDiv.textContent = fullResponse; // Show raw text during streaming
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-              } else if (data.error) {
-                throw new Error(data.error);
+              // Check if there are multiple JSON objects (look for }\ndata: pattern)
+              if (jsonStr.includes('}\n\ndata: ')) {
+                // Split multiple messages and process each separately
+                const messages = jsonStr.split('\n\ndata: ');
+                for (let i = 0; i < messages.length; i++) {
+                  let msgJson = messages[i];
+                  // Add back 'data: ' prefix for subsequent messages
+                  if (i > 0) {
+                    msgJson = 'data: ' + msgJson;
+                  }
+                  
+                  try {
+                    const msgData = JSON.parse(msgJson.startsWith('data: ') ? msgJson.slice(6) : msgJson);
+                    console.log('SSE data received (split):', msgData);
+                    state = this.processSSEData(msgData, messageDiv, messagesContainer, state);
+                  } catch (splitParseError) {
+                    console.log('Parse error for split message:', msgJson, splitParseError);
+                  }
+                }
+              } else {
+                const data = JSON.parse(jsonStr);
+                console.log('SSE data received:', data);
+                state = this.processSSEData(data, messageDiv, messagesContainer, state);
               }
             } catch (parseError) {
-              // Ignore parsing errors for partial data
+              console.log('Parse error for line:', line, parseError);
             }
           }
         }
       }
       
       // Format the complete response as AsciiDoc after streaming is done
-      if (fullResponse && fullResponse.trim()) {
+      if (state.fullResponse && state.fullResponse.trim()) {
+        console.log('=== FRONTEND DEBUG ===');
+        console.log('Full response length:', state.fullResponse.length);
+        console.log('Full response content:', state.fullResponse);
+        console.log('=== END FRONTEND DEBUG ===');
+        
         const contentDiv = messageDiv.querySelector('.message-content');
-        contentDiv.innerHTML = this.formatMessage(fullResponse.trim());
+        const formattedContent = this.formatMessage(state.fullResponse.trim());
+        console.log('Formatted content:', formattedContent);
+        contentDiv.innerHTML = formattedContent;
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
       }
       
       // Add the complete assistant response to conversation history
-      if (fullResponse && fullResponse.trim()) {
+      if (state.fullResponse && state.fullResponse.trim()) {
         this.chatHistory.push({
           role: 'assistant',
-          content: fullResponse.trim()
+          content: state.fullResponse.trim()
         });
         
         // Keep history manageable (last 20 messages)
@@ -1180,14 +1175,31 @@ class WorkshopChatbot {
 
     } catch (error) {
       console.error('Streaming error:', error);
-      if (!hasStarted) {
+      if (!state.hasStarted) {
         messageDiv.remove();
       }
       throw error;
     }
   }
 
-
+  processSSEData(data, messageDiv, messagesContainer, state) {
+    if (data.status === 'starting') {
+      const contentDiv = messageDiv.querySelector('.message-content');
+      contentDiv.innerHTML = '';
+      state.hasStarted = true;
+    } else if (data.content) {
+      console.log('Adding content to fullResponse:', data.content);
+      state.fullResponse += data.content;
+      const contentDiv = messageDiv.querySelector('.message-content');
+      contentDiv.textContent = state.fullResponse; // Show raw text during streaming
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    } else if (data.status === 'complete') {
+      console.log('Stream marked as complete');
+    } else if (data.error) {
+      throw new Error(data.error);
+    }
+    return state;
+  }
 
   addMessage(content, sender, type = 'normal') {
     const messagesContainer = document.getElementById('chatbot-messages');
@@ -1243,6 +1255,12 @@ class WorkshopChatbot {
     // Enhanced AsciiDoc + Markdown formatting
     let formatted = content;
     
+    // Debug logging for attribution content
+    if (content.includes('Workshop:') || content.includes('References:')) {
+      console.log('=== FORMATTING ATTRIBUTION ===');
+      console.log('Original content:', content);
+    }
+    
     // AsciiDoc section headers
     formatted = formatted.replace(/^===== (.+?)$/gm, '<h6>$1</h6>');
     formatted = formatted.replace(/^==== (.+?)$/gm, '<h5>$1</h5>');
@@ -1266,12 +1284,14 @@ class WorkshopChatbot {
     // AsciiDoc bullet lists
     formatted = formatted.replace(/^\*\s+(.+?)$/gm, '<li class="bullet-list">$1</li>');
     
-    // AsciiDoc links
+    // AsciiDoc links (process BEFORE bold formatting to avoid conflicts)
     formatted = formatted.replace(/link:([^\[]+)\[([^\]]*)\]/g, '<a href="$1" target="_blank">$2</a>');
     
     // Basic markdown-like formatting (backwards compatibility)
+    // Double asterisks for bold
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    // Single asterisks for bold (but avoid matching across square brackets used in links)
+    formatted = formatted.replace(/\*([^*\[\]]*?)\*/g, '<strong>$1</strong>');
     formatted = formatted.replace(/`(.*?)`/g, '<code class="inline-code">$1</code>');
     
     // Handle line breaks
@@ -1281,6 +1301,12 @@ class WorkshopChatbot {
     // Wrap in paragraph tags if not already formatted
     if (!formatted.includes('<h') && !formatted.includes('<div') && !formatted.includes('<pre') && !formatted.includes('<li')) {
       formatted = '<p>' + formatted + '</p>';
+    }
+    
+    // Debug logging for attribution content
+    if (content.includes('Workshop:') || content.includes('References:')) {
+      console.log('Formatted content:', formatted);
+      console.log('=== END FORMATTING ATTRIBUTION ===');
     }
     
     return formatted;
