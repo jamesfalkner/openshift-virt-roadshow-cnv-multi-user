@@ -17,8 +17,10 @@ WORKDIR /app
 COPY backend/requirements.txt /app/
 RUN pip install -r requirements.txt
 
-# Install MCP server for Kubernetes operations
-RUN pip install mcp-server-kubernetes
+# # Install MCP server for Kubernetes operations
+# RUN pip install mcp-server-kubernetes
+
+RUN pip install uv
 
 # Copy application code
 COPY backend/ /app/
@@ -30,10 +32,10 @@ COPY content/ /app/content/
 # Create directories for static files
 RUN mkdir -p /app/www /app/pdfs
 
-# Create non-root user for security
-RUN useradd -r -u 1001 -m -c "showroom app user" -s /bin/bash appuser && \
-    chown -R appuser:appuser /app
-USER appuser
+# # Create non-root user for security
+# RUN useradd -r -u 1001 -m -c "showroom app user" -s /bin/bash appuser && \
+#     chown -R appuser:appuser /app
+# USER appuser
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
