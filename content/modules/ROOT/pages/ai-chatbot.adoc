@@ -1111,47 +1111,10 @@ class WorkshopChatbot {
         for (const line of lines) {
           if (line.trim() && line.startsWith('data: ')) {
             try {
-              // Handle case where multiple JSON objects are in one line
               const jsonStr = line.slice(6).trim();
-              console.log('Parsing JSON string:', jsonStr);
-              
-              // Check for concatenated JSON objects by looking for the pattern }\n\ndata:
-              const concatPattern = '}\n\ndata: ';
-              const hasMultipleMessages = jsonStr.includes(concatPattern);
-              console.log('Checking for concatenated messages, pattern found:', hasMultipleMessages);
-              
-              if (hasMultipleMessages) {
-                console.log('Detected multiple messages, splitting...');
-                // Find the split point
-                const splitIndex = jsonStr.indexOf(concatPattern);
-                const firstJson = jsonStr.substring(0, splitIndex + 1); // Include the closing }
-                const secondJson = jsonStr.substring(splitIndex + concatPattern.length); // Skip past "\n\ndata: "
-                
-                console.log('First JSON:', firstJson);
-                console.log('Second JSON:', secondJson);
-                
-                // Process first message
-                try {
-                  const firstData = JSON.parse(firstJson);
-                  console.log('SSE data received (first):', firstData);
-                  state = this.processSSEData(firstData, messageDiv, messagesContainer, state);
-                } catch (firstParseError) {
-                  console.log('Parse error for first message:', firstJson, firstParseError);
-                }
-                
-                // Process second message  
-                try {
-                  const secondData = JSON.parse(secondJson);
-                  console.log('SSE data received (second):', secondData);
-                  state = this.processSSEData(secondData, messageDiv, messagesContainer, state);
-                } catch (secondParseError) {
-                  console.log('Parse error for second message:', secondJson, secondParseError);
-                }
-              } else {
-                const data = JSON.parse(jsonStr);
-                console.log('SSE data received:', data);
-                state = this.processSSEData(data, messageDiv, messagesContainer, state);
-              }
+              const data = JSON.parse(jsonStr);
+              console.log('SSE data received:', data);
+              state = this.processSSEData(data, messageDiv, messagesContainer, state);
             } catch (parseError) {
               console.log('Parse error for line:', line, parseError);
             }

@@ -3,7 +3,7 @@
 Showroom AI Assistant Backend
 A generic FastAPI service with embedded RAG for workshop chatbots
 """
-
+import asyncio
 import os
 import json
 import logging
@@ -1194,9 +1194,11 @@ class ShowroomAIChatbot:
 
             # Step 1: Retrieve relevant context using RAG with page context
             if page_context:
-                yield f"data: {json.dumps({'status': f'Searching {page_context} content...'})}\\n\\n"
+                yield f"data: {json.dumps({'status': f'Searching {page_context} content...'})}\n\n"
             else:
-                yield f"data: {json.dumps({'status': 'Searching workshop content...'})}\\n\\n"
+                yield f"data: {json.dumps({'status': 'Searching workshop content...'})}\n\n"
+            await asyncio.sleep(0.1)
+
             relevant_context, sources = await self.retrieve_relevant_content(user_message, page_context)
 
             # Step 2: Build system prompt with retrieved context
@@ -1228,18 +1230,20 @@ class ShowroomAIChatbot:
             # Step 4: Generate response with tools if MCP is enabled
             if include_mcp:
                 logger.info("=== USING TOOLS PATH ===")
-                yield f"data: {json.dumps({'status': 'Generating response with tools...'})}\\n\\n"
+                yield f"data: {json.dumps({'status': 'Generating response with tools...'})}\n\n"
                 logger.info("Starting tools streaming...")
                 async for chunk in self._stream_with_tools(messages, user_message):
                     yield chunk
                 logger.info("Tools streaming completed")
             else:
                 logger.info("=== USING REGULAR STREAMING PATH ===")
-                yield f"data: {json.dumps({'status': 'Generating response...'})}\\n\\n"
+                yield f"data: {json.dumps({'status': 'Generating response...'})}\n\n"
                 logger.info("Starting regular streaming...")
                 async for chunk in self._stream_llm_response(messages):
                     yield chunk
                 logger.info("Regular streaming completed")
+
+            await asyncio.sleep(0.1)
 
             # Step 5: Add source attribution at the end
             logger.info(f"=== SOURCE ATTRIBUTION DEBUG ===")
@@ -1249,7 +1253,9 @@ class ShowroomAIChatbot:
             logger.info(f"Attribution content: {repr(source_attribution)}")
             if source_attribution:
                 logger.info("=== ADDING SOURCE ATTRIBUTION ===")
-                yield f"data: {json.dumps({'content': source_attribution})}\\n\\n"
+                yield f"data: {json.dumps({'content': source_attribution})}\n\n"
+                # Add a small delay to ensure attribution is sent separately
+                await asyncio.sleep(0.1)
             else:
                 logger.warning("No source attribution was generated")
 
@@ -1258,7 +1264,7 @@ class ShowroomAIChatbot:
         except Exception as e:
             logger.error(f"Error in stream_chat_response: {e}")
             logger.info("=== CHAT REQUEST FAILED ===")
-            yield f"data: {json.dumps({'error': str(e)})}\\n\\n"
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     def _build_system_prompt(self, relevant_context: str, include_mcp: bool, page_context: str = None) -> str:
         """Build system prompt with RAG context, tool info, and optional page context using external configuration"""
@@ -1529,6 +1535,7 @@ async def stream_chat(chat_request: ChatRequest):
             yield chunk
 
         yield "data: {\"status\": \"complete\"}\n\n"
+        await asyncio.sleep(0.1)
 
     return StreamingResponse(
         generate(),
