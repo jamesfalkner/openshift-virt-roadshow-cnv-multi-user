@@ -1057,7 +1057,7 @@ class ShowroomAIChatbot:
                         workshop_links.append(f'*{title}*')
             
             if workshop_links:
-                workshop_part = "*Workshop:* " + ", ".join(workshop_links)
+                workshop_part = "WORKSHOP: " + ", ".join(workshop_links)
                 attribution_parts.append(workshop_part)
         
         # PDF reference sources (just names, no links)
@@ -1072,12 +1072,12 @@ class ShowroomAIChatbot:
                     pdf_names.append(f'_{title}_')
             
             if pdf_names:
-                pdf_part = "*References:* " + ", ".join(pdf_names)
+                pdf_part = "REFERENCES: " + ", ".join(pdf_names)
                 attribution_parts.append(pdf_part)
         
         if attribution_parts:
             # Use AsciiDoc formatting that the frontend will process correctly
-            return "\n\n---\n\n_" + " | ".join(attribution_parts) + "_"
+            return "\n\n---\n\n" + " | ".join(attribution_parts)
         
         return ""
     
