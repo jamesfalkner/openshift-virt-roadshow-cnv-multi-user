@@ -1347,7 +1347,13 @@ class WorkshopChatbot {
       console.log('Original content:', content);
     }
     
-    // AsciiDoc section headers
+    // AsciiDoc section headers (handle trailing == properly)
+    formatted = formatted.replace(/^===== (.+?) =====$/gm, '<h6>$1</h6>');
+    formatted = formatted.replace(/^==== (.+?) ====$/gm, '<h5>$1</h5>');
+    formatted = formatted.replace(/^=== (.+?) ===$/gm, '<h4>$1</h4>');
+    formatted = formatted.replace(/^== (.+?) ==$/gm, '<h3>$1</h3>');
+    formatted = formatted.replace(/^= (.+?) =$/gm, '<h2>$1</h2>');
+    // Also handle headers without trailing ==
     formatted = formatted.replace(/^===== (.+?)$/gm, '<h6>$1</h6>');
     formatted = formatted.replace(/^==== (.+?)$/gm, '<h5>$1</h5>');
     formatted = formatted.replace(/^=== (.+?)$/gm, '<h4>$1</h4>');
@@ -1367,8 +1373,10 @@ class WorkshopChatbot {
     // AsciiDoc numbered lists
     formatted = formatted.replace(/^(\d+)\.\s+(.+?)$/gm, '<li class="numbered-list">$2</li>');
     
-    // AsciiDoc bullet lists
-    formatted = formatted.replace(/^\*\s+(.+?)$/gm, '<li class="bullet-list">$1</li>');
+    // AsciiDoc bullet lists (protect from bold processing by replacing * with placeholder)
+    formatted = formatted.replace(/^\*\s+(.+?)$/gm, function(match, content) {
+      return `<li class="bullet-list">${content}</li>`;
+    });
     
     // Convert horizontal rules
     formatted = formatted.replace(/^---$/gm, '<hr>');
@@ -1382,11 +1390,17 @@ class WorkshopChatbot {
     // Markdown-style links [text](url)
     formatted = formatted.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
     
+    // Bare URLs - convert standalone URLs to clickable links (display without scheme)
+    formatted = formatted.replace(/(?<![\["])(https?:\/\/[^\s\[\]()<>]+)(?![\]"])/g, function(match) {
+      const displayText = match.replace(/^https?:\/\//, '');
+      return `<a href="${match}" target="_blank">${displayText}</a>`;
+    });
+    
     // Basic markdown-like formatting (backwards compatibility)
     // Double asterisks for bold
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Single asterisks for bold (but avoid matching across square brackets used in links)
-    formatted = formatted.replace(/\*([^*\[\]]*?)\*/g, '<strong>$1</strong>');
+    // Single asterisks for bold (but avoid line-start asterisks which are bullet lists, and square brackets)
+    formatted = formatted.replace(/(?<!^|\n)\*([^*\[\]\n]+?)\*/g, '<strong>$1</strong>');
     formatted = formatted.replace(/`(.*?)`/g, '<code class="inline-code">$1</code>');
     
     // Handle line breaks
