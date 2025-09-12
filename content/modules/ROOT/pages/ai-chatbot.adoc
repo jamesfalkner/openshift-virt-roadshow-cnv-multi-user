@@ -1075,8 +1075,7 @@ class WorkshopChatbot {
     }
 
     try {
-      await this.streamChatResponse(message, pageContext);
-      // Add user message to API history only after successful API call
+      // Add user message to API history BEFORE the API call (but after display)
       this.chatHistory.push({
         role: 'user',
         content: message
@@ -1085,6 +1084,8 @@ class WorkshopChatbot {
       if (this.chatHistory.length > 20) {
         this.chatHistory = this.chatHistory.slice(-20);
       }
+      
+      await this.streamChatResponse(message, pageContext);
       this.setStatus('');
     } catch (error) {
       console.error('Chat stream failed:', error);
@@ -1138,7 +1139,7 @@ class WorkshopChatbot {
         },
         body: JSON.stringify({
           message: message,
-          conversation_history: this.chatHistory,
+          conversation_history: this.getConversationHistoryForAPI(message),
           include_mcp: this.config.mcpEnabled,
           page_context: pageContext
         })
@@ -1239,6 +1240,20 @@ class WorkshopChatbot {
       throw new Error(data.error);
     }
     return state;
+  }
+
+  getConversationHistoryForAPI(currentMessage) {
+    // Return conversation history excluding the current message to avoid duplicates
+    const history = [...this.chatHistory];
+    
+    // If the last message in history matches the current message, exclude it
+    if (history.length > 0 && 
+        history[history.length - 1].role === 'user' && 
+        history[history.length - 1].content === currentMessage) {
+      history.pop(); // Remove the duplicate current message
+    }
+    
+    return history;
   }
 
   addMessageToDisplay(content, sender, type = 'normal') {
