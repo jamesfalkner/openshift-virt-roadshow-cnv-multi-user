@@ -1,4 +1,4 @@
-= Welcome to {lab_name}!
+= Welcome: Experience OpenShift Virtualization Lab
 
 [%hardbreaks]
 == Introduction
