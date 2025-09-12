@@ -1376,6 +1376,12 @@ class WorkshopChatbot {
     // AsciiDoc links (process BEFORE bold formatting to avoid conflicts)
     formatted = formatted.replace(/link:([^\[]+)\[([^\]]*)\]/g, '<a href="$1" target="_blank">$2</a>');
     
+    // URL[TEXT] format - simple URL followed by square brackets with text
+    formatted = formatted.replace(/(https?:\/\/[^\s\[\]]+)\[([^\]]+)\]/g, '<a href="$1" target="_blank">$2</a>');
+    
+    // Markdown-style links [text](url)
+    formatted = formatted.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+    
     // Basic markdown-like formatting (backwards compatibility)
     // Double asterisks for bold
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
