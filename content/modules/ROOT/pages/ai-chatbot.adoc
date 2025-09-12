@@ -439,7 +439,7 @@ summary  {
 }
 
 .message-attribution a {
-  color: #0066cc;
+  color: #cc0000ff;
   text-decoration: none;
   font-weight: normal !important;
 }
@@ -1342,7 +1342,7 @@ class WorkshopChatbot {
     let formatted = content;
     
     // Debug logging for attribution content
-    if (content.includes('Workshop:') || content.includes('References:')) {
+    if (content.includes('RELEVANT WORKSHOP LINKS:') || content.includes('TECHDOC REFERENCES:')) {
       console.log('=== FORMATTING ATTRIBUTION ===');
       console.log('Original content:', content);
     }
@@ -1388,7 +1388,7 @@ class WorkshopChatbot {
     formatted = formatted.replace(/\n/g, '<br>');
     
     // Handle attribution content specially
-    if (formatted.includes('<hr>') && (content.includes('WORKSHOP:') || content.includes('REFERENCES:'))) {
+    if (formatted.includes('<hr>') && (content.includes('RELEVANT WORKSHOP LINKS:') || content.includes('TECHDOC REFERENCES:'))) {
       // Split on HR and wrap attribution part with special class
       const parts = formatted.split('<hr>');
       if (parts.length === 2) {
@@ -1416,7 +1416,7 @@ class WorkshopChatbot {
     }
     
     // Debug logging for attribution content
-    if (content.includes('Workshop:') || content.includes('References:')) {
+    if (content.includes('RELEVANT WORKSHOP LINKS:') || content.includes('TECHDOC REFERENCES:')) {
       console.log('Formatted content:', formatted);
       console.log('=== END FORMATTING ATTRIBUTION ===');
     }
