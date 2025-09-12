@@ -1062,8 +1062,8 @@ class WorkshopChatbot {
     const pageContext = this.getCurrentPageContext();
     console.log('Page context for chat:', pageContext);
 
-    // Add user message to chat
-    this.addMessage(message, 'user');
+    // Add user message to display only (not to API history yet)
+    this.addMessageToDisplay(message, 'user');
     input.value = '';
     document.getElementById('chatbot-send').disabled = true;
 
@@ -1076,6 +1076,15 @@ class WorkshopChatbot {
 
     try {
       await this.streamChatResponse(message, pageContext);
+      // Add user message to API history only after successful API call
+      this.chatHistory.push({
+        role: 'user',
+        content: message
+      });
+      // Keep API history manageable
+      if (this.chatHistory.length > 20) {
+        this.chatHistory = this.chatHistory.slice(-20);
+      }
       this.setStatus('');
     } catch (error) {
       console.error('Chat stream failed:', error);
@@ -1230,6 +1239,37 @@ class WorkshopChatbot {
       throw new Error(data.error);
     }
     return state;
+  }
+
+  addMessageToDisplay(content, sender, type = 'normal') {
+    // Add message to UI display only (not to API conversation history)
+    const messagesContainer = document.getElementById('chatbot-messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ' + sender + '-message' + (type === 'error' ? ' error-message' : '');
+    
+    const timeString = new Date().toLocaleTimeString();
+    messageDiv.innerHTML = 
+      '<div class="message-content">' + this.formatMessage(content) + '</div>' +
+      '<div class="message-time">' + timeString + '</div>';
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    // Add to display history for UI persistence
+    this.displayHistory.push({
+      content: content,
+      sender: sender,
+      type: type,
+      time: timeString
+    });
+    
+    // Keep display history manageable (last 50 messages)
+    if (this.displayHistory.length > 50) {
+      this.displayHistory = this.displayHistory.slice(-50);
+    }
+    
+    // Save state after adding message
+    this.saveChatState();
   }
 
   addMessage(content, sender, type = 'normal') {
