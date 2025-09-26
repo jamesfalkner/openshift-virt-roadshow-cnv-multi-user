@@ -1,7 +1,110 @@
 // NOTE this is a sample set of troubleshooting/gotchas for this workshop, intended to be used to ingest into the showroom-assistant RAG system to provide attendees with workshop-specific guidance as part of the AI assistant.
 
-= Troubleshooting common lab issues
+= OpenShift Virtualization Workshop - Known Problem/Solutions
 
-- Issue:  When I created a Migration Plan (Plans for Virtualization), it threw this error: "The plan is not ready - VDDKInvalid VDDK init image is invalid. To troubleshoot, check the Forklift controller pod logs." I checked the Forklift controller pod logs but not sure what I am supposed to look for. I scaled the pod to zero on Forklift controller Deployment and re-scaled it back to recreate the pod but it did not resolve the issue. Solution: This is perhaps a problem only on the Partner portal, check the partner portal for more details.
+== Problem / Solution Scenarios
 
-- Issue: I Noticed the 'Customize VirtualMachine' button is not getting enabled on Module 5, windows 2019 vm creation from template lab section. Am i missing/mis configuring anything here? Solution: its because you're in the openshift project and you can't actually create it there.
+=== Problem 1: VM Image Pull Failure
+*Problem:*  
+When creating a VirtualMachine, the VM fails with the error: `virt-launcher failed to pull container image kubevirt/virt-launcher`.
+
+*Solution:*  
+Configure an ImageContentSourcePolicy (ICSP) to redirect the image to an accessible registry mirror and re-run the deployment.
+
+=== Problem 2: Migration TLS Handshake Timeout
+*Problem:*  
+Migration of a VM from vSphere using MTV fails with error: `TLS handshake timeout`.
+
+*Solution:*  
+Ensure that the `mtv-controller` pod has outbound connectivity to vCenter’s API endpoint on port 443. Adding a NetworkPolicy exception for the `openshift-mtv` namespace resolves the issue.
+
+=== Problem 3: Resized Disk Not Visible
+*Problem:*  
+After resizing a VM’s disk, the guest OS does not see the additional storage.
+
+*Solution:*  
+Trigger a `blockDeviceRescan` in the guest or use `virtctl expand-disk` followed by `xfs_growfs` or `resize2fs`.
+
+=== Problem 4: Snapshot Unsupported by StorageClass
+*Problem:*  
+VM snapshot operation fails with: `CSI driver does not support snapshots for this StorageClass`.
+
+*Solution:*  
+Verify the StorageClass supports `VolumeSnapshotClass`. If not, migrate the PVC to `ocs-storagecluster-ceph-rbd`.
+
+=== Problem 5: VM Pod OOMKilled
+*Problem:*  
+A VM pod enters `OOMKilled` immediately after start.
+
+*Solution:*  
+Adjust `resources.requests.memory` and `resources.limits.memory` in the VM manifest, or update the namespace’s LimitRange.
+
+=== Problem 6: Live Migration Failed
+*Problem:*  
+VM live migration becomes stuck in `MigrationState: Failed`.
+
+*Solution:*  
+Check `evictionStrategy`, node CPU model labels, and storage access. Add tolerations for the migration target node if needed.
+
+=== Problem 7: Exposed VM Application Refuses Connection
+*Problem:*  
+Exposing a VM application using a Service results in `Connection Refused`.
+
+*Solution:*  
+Ensure the VM has the `virtio-net` driver and that a `masquerade` interface or a `NetworkAttachmentDefinition` is configured.
+
+=== Problem 8: Restored VM Fails to Boot
+*Problem:*  
+After restoring a VM backup, the VM fails to boot with `Disk not found`.
+
+*Solution:*  
+Check the PVC binding. Re-bind the PVC or update the VM spec to reference the correct claim.
+
+=== Problem 9: Template DataVolume Collisions
+*Problem:*  
+Starting multiple VMs from a template leaves some pending with `Insufficient DataVolumes`.
+
+*Solution:*  
+Update the template to use `generateName` for DataVolumes to avoid collisions.
+
+=== Problem 10: MTV Disk Upload Stalled
+*Problem:*  
+VM migration from vSphere stalls with `MTV Worker: failed to upload disk to PVC`.
+
+*Solution:*  
+Resize the PVC to match the source disk size plus 5% overhead.
+
+=== Problem 11: Multus UDN Attach Failure
+*Problem:*  
+Creating a UserDefinedNetwork results in `Multus: error adding pod to network`.
+
+*Solution:*  
+Validate the CNI config in the `NetworkAttachmentDefinition` and ensure subnet ranges don’t overlap.
+
+=== Problem 12: SR-IOV VF Not Found
+*Problem:*  
+VM fails to attach to a secondary SR-IOV network: `No suitable VF found`.
+
+*Solution:*  
+Confirm SR-IOV operator is installed, PF has available VFs, and update `SriovNetworkNodePolicy` to increase VF count.
+
+=== Problem 13: CPU Hotplug Not Detected
+*Problem:*  
+Scaling CPU cores on a running VM does not reflect in the guest OS.
+
+*Solution:*  
+Enable `cpu.hotplug` in VM XML via `virtctl edit-vm`. For Windows, install virtio balloon driver.
+
+=== Problem 14: HostPath Migration Blocked
+*Problem:*  
+Migrating a VM using `hostPath` storage fails: `Live migration requires shared storage`.
+
+*Solution:*  
+Migrate disks to CSI-backed PVCs. Use `virtctl migrate --allow-auto-conversion` if enabled.
+
+=== Problem 15: Template Missing InstanceType
+*Problem:*  
+VM template instantiation fails: `Missing InstanceType reference`.
+
+*Solution:*  
+Ensure `instancetype.kubevirt.io` CRDs are installed. Apply a predefined or custom InstanceType before instantiation.
