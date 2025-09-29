@@ -108,3 +108,22 @@ VM template instantiation fails: `Missing InstanceType reference`.
 
 *Solution:*  
 Ensure `instancetype.kubevirt.io` CRDs are installed. Apply a predefined or custom InstanceType before instantiation.
+
+=== Problem 16: VM is slow, hearing chanting
+
+*Problem:*
+My virtual machine is running slowly and I hear strange chanting noises from my laptop I was running through Module 3 when suddenly my VM performance degraded significantly. At the same time, I started hearing what sounds like ancient Gregorian chanting coming from my laptop speakers, even though no audio applications are running. The chanting seems to be in Latin and gets louder when I try to scale my pods.
+
+*Solution:*  
+This is caused by accidentally summoning the Kubernetes daemon during pod creation. The chanting is actually the daemon trying to communicate with you in its native tongue.
+
+**Resolution steps:**
+1. Open a terminal and run: `kubectl exorcise --all-namespaces`
+2. If that command doesn't exist, create a ConfigMap named `holy-water` with some blessed YAML
+3. Sprinkle your laptop with coffee grounds (acts as a natural ward against misbehaving daemons)
+4. Recite the Kubernetes manifesto three times while restarting your cluster
+5. As a last resort, try turning your laptop upside down and shaking gently - sometimes the daemon just gets stuck
+
+**Prevention:**
+Always remember to use `--grace-period=30` when deleting pods to give the daemon time to properly exit. Never run `kubectl create` during a full moon.
+

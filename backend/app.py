@@ -1135,17 +1135,17 @@ class ShowroomAIChatbot:
         if not file_path:
             return ""
             
-        # Extract filename from path like "content/modules/ROOT/pages/module-01.adoc"
-        if '/pages/' in file_path and file_path.endswith('.adoc'):
-            # Get the filename without extension
-            filename = file_path.split('/')[-1].replace('.adoc', '')
+        # Extract filename from path like "content/modules/ROOT/pages/module-01.adoc" or absolute paths
+        if file_path.endswith('.adoc'):
+            # Get the filename without extension from the last part of the path
+            filename = Path(file_path).stem
             
             # Skip special files that don't generate HTML pages
             skip_files = ['ai-chatbot', 'nav', 'header', 'footer', 'theme', 'layout']
             if any(skip_file in filename for skip_file in skip_files):
                 return ""
             
-            # Convert to HTML URL
+            # Convert to HTML URL - use the actual filename from the adoc file
             return f"{filename}.html"
         
         return ""
@@ -1174,8 +1174,8 @@ class ShowroomAIChatbot:
             )
             return fallback_content, []
 
-        # Use results ordered by similarity score (highest similarity first)
-        similarity_results = results
+        # Apply troubleshooting document prioritization
+        similarity_results = self._prioritize_troubleshooting_content(results, enhanced_query)
 
         # Log detailed RAG debugging information
         logger.info(f"=== RAG SEARCH START ===")
@@ -1222,7 +1222,67 @@ class ShowroomAIChatbot:
         logger.info(f"RAG CONTEXT: Using {len(relevant_content)} content snippets")
 
         return context, sources
-    
+
+    def _prioritize_troubleshooting_content(self, results: List[Dict], query: str) -> List[Dict]:
+        """Prioritize troubleshooting documents in RAG results"""
+        if not results:
+            return results
+
+        # Identify troubleshooting documents
+        troubleshooting_results = []
+        regular_results = []
+
+        # Keywords that indicate troubleshooting queries
+        troubleshooting_keywords = [
+            'error', 'issue', 'problem', 'troubleshoot', 'fix', 'solve', 'failed', 'failure',
+            'not working', 'broken', 'stuck', 'help', 'debug', 'wrong', 'invalid'
+        ]
+
+        query_lower = query.lower()
+        is_troubleshooting_query = any(keyword in query_lower for keyword in troubleshooting_keywords)
+
+        for result in results:
+            file_path = result['metadata'].get('file_path', '').lower()
+            title = result['metadata'].get('title', '').lower()
+
+            # Check if this is a troubleshooting document
+            is_troubleshooting_doc = (
+                'troubleshoot' in file_path or
+                'troubleshoot' in title or
+                'issue' in title or
+                'problem' in title or
+                'gotcha' in title or
+                'gotcha' in file_path
+            )
+
+            if is_troubleshooting_doc:
+                # Boost similarity score for troubleshooting documents
+                boosted_result = result.copy()
+                original_similarity = result['similarity']
+
+                if is_troubleshooting_query:
+                    # Strong boost for troubleshooting queries
+                    boost_factor = 1.5
+                else:
+                    # Moderate boost for general queries
+                    boost_factor = 1.2
+
+                boosted_result['similarity'] = min(1.0, original_similarity * boost_factor)
+                boosted_result['original_similarity'] = original_similarity
+                boosted_result['boosted'] = True
+
+                logger.info(f"TROUBLESHOOTING BOOST: '{result['metadata']['title']}' similarity {original_similarity:.3f} → {boosted_result['similarity']:.3f} (boost: {boost_factor}x)")
+                troubleshooting_results.append(boosted_result)
+            else:
+                regular_results.append(result)
+
+        # Combine results with troubleshooting documents first, then sort all by similarity
+        all_results = troubleshooting_results + regular_results
+        sorted_results = sorted(all_results, key=lambda x: x['similarity'], reverse=True)
+
+        logger.info(f"TROUBLESHOOTING PRIORITIZATION: {len(troubleshooting_results)} troubleshooting docs, {len(regular_results)} regular docs")
+
+        return sorted_results
 
     async def get_mcp_tools(self, server_url: str = None) -> List[Dict]:
         """Get available MCP tools using FastMCP"""
